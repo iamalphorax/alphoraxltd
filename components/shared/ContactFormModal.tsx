@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { newMetaEventId, trackPixelEvent } from '@/lib/meta/pixel'
 import { X, Send, MessageSquare, CheckCircle2 } from 'lucide-react'
 
 interface ContactFormModalProps {
@@ -63,7 +64,8 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsSubmitting(true)
-        
+        const metaEventId = newMetaEventId()
+
         try {
             const response = await fetch('/api/contact', {
                 method: 'POST',
@@ -77,11 +79,13 @@ const ContactFormModal: React.FC<ContactFormModalProps> = ({
                     company: formData.company,
                     subject: formData.subject,
                     message: formData.message,
-                    services: formData.selectedServices
+                    services: formData.selectedServices,
+                    metaEventId
                 }),
             })
 
             if (response.ok) {
+                trackPixelEvent('Lead', metaEventId, { content_name: 'Contact form' })
                 setIsSubmitting(false)
                 setIsSuccess(true)
                 setFormData({

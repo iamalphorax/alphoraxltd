@@ -17,6 +17,8 @@ import {
   FileTextIcon,
   TargetIcon,
 } from "lucide-react";
+import { newMetaEventId, trackPixelEvent } from "@/lib/meta/pixel";
+import { scheduleEventId } from "@/lib/meta/calendly";
 import {
   generateOrganizationSchema,
   generateContactPageSchema,
@@ -106,6 +108,33 @@ const ContactPage = () => {
     return () => clearTimeout(timer);
   }, [isMeetingModalOpen]);
 
+  // When a call is booked in the Calendly scheduler, report it to Meta as a
+  // Schedule event: through the browser pixel here, and through the
+  // Conversions API via our server (which checks the booking with Calendly).
+  useEffect(() => {
+    const reported = new Set<string>();
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== "https://calendly.com") return;
+      if (e.data?.event !== "calendly.event_scheduled") return;
+      const inviteeUri = e.data.payload?.invitee?.uri;
+      const eventId = scheduleEventId(inviteeUri);
+      if (!eventId || reported.has(eventId)) return;
+      reported.add(eventId);
+
+      trackPixelEvent("Schedule", eventId, { content_name: "Discovery call" });
+      fetch("/api/meta/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteeUri }),
+        keepalive: true,
+      }).catch(() => {
+        // Tracking must never break the page.
+      });
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -135,6 +164,7 @@ const ContactPage = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    const metaEventId = newMetaEventId();
 
     try {
       const response = await fetch("/api/contact", {
@@ -142,10 +172,11 @@ const ContactPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formState),
+        body: JSON.stringify({ ...formState, metaEventId }),
       });
 
       if (response.ok) {
+        trackPixelEvent("Lead", metaEventId, { content_name: "Contact form" });
         setIsSubmitting(false);
         setIsSubmitted(true);
         setFormState({
@@ -710,7 +741,7 @@ const ContactPage = () => {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-white">Schedule a Meeting</h2>
-                  <p className="text-secondary-silver text-xs">Pick a time that works for you — 15 min discovery call</p>
+                  <p className="text-secondary-silver text-xs">Pick a time that works for you — 30 min discovery call</p>
                 </div>
               </div>
               <button

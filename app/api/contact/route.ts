@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { cleanEventId, getMetaRequestContext, sendMetaEvent } from "@/lib/meta/capi";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { name, email, phone, company, subject, message, services } = body;
+    const metaContext = getMetaRequestContext(request);
 
     // Validate required fields
     if (!name || !email || !subject || !message) {
@@ -142,6 +144,17 @@ export async function POST(request: Request) {
         { status: response.status }
       );
     }
+
+    // Report the lead to Meta after the response is sent.
+    after(() =>
+      sendMetaEvent({
+        eventName: "Lead",
+        eventId: cleanEventId(body.metaEventId),
+        context: metaContext,
+        user: { email, phone, name },
+        customData: { content_name: "Contact form" },
+      }),
+    );
 
     return NextResponse.json({ success: true, data: responseData });
   } catch (error) {

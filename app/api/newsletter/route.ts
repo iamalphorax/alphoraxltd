@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { cleanEventId, getMetaRequestContext, sendMetaEvent } from "@/lib/meta/capi";
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const { email, metaEventId } = await request.json();
+    const metaContext = getMetaRequestContext(request);
 
     if (!email) {
       return NextResponse.json(
@@ -46,6 +48,17 @@ export async function POST(request: Request) {
         { status: response.status }
       );
     }
+
+    // Report the sign-up to Meta after the response is sent.
+    after(() =>
+      sendMetaEvent({
+        eventName: "CompleteRegistration",
+        eventId: cleanEventId(metaEventId),
+        context: metaContext,
+        user: { email },
+        customData: { content_name: "Newsletter" },
+      }),
+    );
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

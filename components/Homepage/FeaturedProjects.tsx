@@ -72,7 +72,7 @@ const FeaturedProjects = ({ data }: { data: ProjectsData }) => {
                   {project.description}
                 </p>
                 <Link
-                  href="/services"
+                  href="/case-studies"
                   className="inline-flex items-center text-accent text-sm font-medium focus:outline-none focus:underline focus:text-accent/80"
                   aria-label={`View case study for ${project.title}`}
                 >
