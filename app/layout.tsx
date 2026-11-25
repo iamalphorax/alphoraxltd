@@ -5,6 +5,8 @@ import Script from "next/script";
 import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer"
 import WhatsAppButton from "@/components/WhatsAppButton";
+import MetaPixel from "@/components/analytics/MetaPixel";
+import { company } from "@/lib/company";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -75,6 +77,8 @@ export default function RootLayout({
             __html: JSON.stringify(structuredData),
           }}
         />
+        {/* Meta (Facebook) Pixel */}
+        <MetaPixel pixelId={company.metaPixelId} />
         <Header />
         {children}
         <Footer />

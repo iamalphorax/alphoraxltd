@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllBlogs } from "@/lib/blogs";
+import { caseStudies } from "@/lib/case-studies";
+import { pressReleases } from "@/lib/press-releases";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const rawBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://alphorax.com";
@@ -43,7 +45,47 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             changeFrequency: "weekly",
             priority: 0.6,
         },
+        {
+            url: `${baseUrl}/case-studies`,
+            lastModified: safeDate(new Date()),
+            changeFrequency: "monthly",
+            priority: 0.8,
+        },
+        {
+            url: `${baseUrl}/press-release`,
+            lastModified: safeDate(pressReleases[0]?.date ?? new Date()),
+            changeFrequency: "monthly",
+            priority: 0.6,
+        },
+        {
+            url: `${baseUrl}/careers`,
+            lastModified: safeDate(new Date()),
+            changeFrequency: "weekly",
+            priority: 0.6,
+        },
+        ...["/privacy-policy", "/terms-of-service", "/cookie-policy"].map(
+            (path) => ({
+                url: `${baseUrl}${path}`,
+                lastModified: safeDate(new Date()),
+                changeFrequency: "yearly" as const,
+                priority: 0.3,
+            }),
+        ),
     ];
+
+    const caseStudyRoutes: MetadataRoute.Sitemap = caseStudies.map((study) => ({
+        url: `${baseUrl}/case-studies/${study.slug}`,
+        lastModified: safeDate(new Date()),
+        changeFrequency: "monthly",
+        priority: 0.7,
+    }));
+
+    const pressRoutes: MetadataRoute.Sitemap = pressReleases.map((release) => ({
+        url: `${baseUrl}/press-release/${release.slug}`,
+        lastModified: safeDate(release.date),
+        changeFrequency: "yearly",
+        priority: 0.5,
+    }));
 
     // Fetch dynamic blogs from Cloudinary
     const blogs = await getAllBlogs();
@@ -55,5 +97,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: post.featured ? 0.8 : 0.6,
     }));
 
-    return [...staticRoutes, ...blogRoutes];
+    return [...staticRoutes, ...caseStudyRoutes, ...pressRoutes, ...blogRoutes];
 }

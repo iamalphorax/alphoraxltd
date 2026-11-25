@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { SendIcon } from "lucide-react";
+import { newMetaEventId, trackPixelEvent } from "@/lib/meta/pixel";
 const Footer = () => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -13,14 +14,16 @@ const Footer = () => {
     if (!email) return;
 
     setIsSubmitting(true);
+    const metaEventId = newMetaEventId();
     try {
       const response = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, metaEventId }),
       });
 
       if (response.ok) {
+        trackPixelEvent("CompleteRegistration", metaEventId, { content_name: "Newsletter" });
         setIsSubmitted(true);
         setEmail("");
       } else {
@@ -169,7 +172,7 @@ const Footer = () => {
 
                 <li>
                   <Link
-                    href="/projects"
+                    href="/"
                     className="text-secondary-silver hover:text-accent transition-colors flex items-center focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-secondary-charcoal"
                   >
                     <span className="w-1 h-1 bg-accent/50 rounded-full mr-2"></span>
@@ -333,17 +336,19 @@ const Footer = () => {
           </p>
           <div className="flex sm:flex-row flex-col items-center space-x-0 sm:space-x-8">
             <div className="flex space-x-3 sm:space-x-6">
-              {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(
-                (item, index) => (
-                  <a
-                    key={index}
-                    href="#"
-                    className="text-secondary-silver hover:text-accent transition-colors text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-secondary-charcoal"
-                  >
-                    {item}
-                  </a>
-                ),
-              )}
+              {[
+                { label: "Privacy Policy", href: "/privacy-policy" },
+                { label: "Terms of Service", href: "/terms-of-service" },
+                { label: "Cookie Policy", href: "/cookie-policy" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-secondary-silver hover:text-accent transition-colors text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-secondary-charcoal"
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

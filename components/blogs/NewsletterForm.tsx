@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { newMetaEventId, trackPixelEvent } from "@/lib/meta/pixel";
 
 const NewsletterForm = () => {
   const [email, setEmail] = useState("");
@@ -12,14 +13,16 @@ const NewsletterForm = () => {
     if (!email) return;
 
     setIsSubmitting(true);
+    const metaEventId = newMetaEventId();
     try {
       const response = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, metaEventId }),
       });
 
       if (response.ok) {
+        trackPixelEvent("CompleteRegistration", metaEventId, { content_name: "Newsletter" });
         setIsSubmitted(true);
         setEmail("");
       } else {
